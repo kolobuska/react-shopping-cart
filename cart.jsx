@@ -13,9 +13,9 @@ const Products = () => {
     Input,
   } = ReactBootstrap;
   //  Fetch Data
-  const [query, setQuery] = React.useState("http://localhost:1337/products");
+  const [query, setQuery] = React.useState("http://localhost:1337/graphql");
   const [{ data, isLoading, isError }, doFetch] = useDataApi(
-    "http://localhost:1337/products",
+    "http://localhost:1337/graphql",
     {
       data: [],
     }
@@ -101,7 +101,8 @@ const Products = () => {
   // TODO: implement the restockProducts function
   const restockProducts = (url) => {
     doFetch(url);
-    let newItems = data.map((item) => {
+    console.log(`data: ${JSON.stringify(data)}`);
+    let newItems = data.products.map((item) => {
       let { name, country, cost, instock } = item;
       return { name, country, cost, instock };
     });
@@ -128,7 +129,7 @@ const Products = () => {
       <Row>
         <form
           onSubmit={(event) => {
-            restockProducts(`http://localhost:1337/${query}`);
+            restockProducts(query);
             console.log(`Restock called on ${query}`);
             event.preventDefault();
           }}
@@ -178,10 +179,24 @@ const useDataApi = (initialUrl, initialData) => {
     const fetchData = async () => {
       dispatch({ type: "FETCH_INIT" });
       try {
-        const result = await axios(url);
+        const result = await axios({url,
+          method: 'post',
+          data: {
+            query: `
+            query GetProducts {
+              products {
+                 id
+                 name
+                 instock
+                 cost
+               }
+             }
+              `
+          }
+        });
         console.log("FETCH FROM URl");
         if (!didCancel) {
-          dispatch({ type: "FETCH_SUCCESS", payload: result.data });
+          dispatch({ type: "FETCH_SUCCESS", payload: result.data.data });
         }
       } catch (error) {
         if (!didCancel) {
